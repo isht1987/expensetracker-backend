@@ -236,13 +236,14 @@ def export_excel(request):
         cell.border = border
     
     # Data rows
+    # Data rows
     for row, expense in enumerate(queryset, 5):
         ws.cell(row=row, column=1, value=expense.date.strftime('%Y-%m-%d')).border = border
         ws.cell(row=row, column=2, value=expense.get_category_display_name()).border = border
         ws.cell(row=row, column=3, value=float(expense.amount)).border = border
         ws.cell(row=row, column=4, value=expense.description or "").border = border
-    ws.cell(row=row, column=5, value=expense.created_at.strftime('%Y-%m-%d %H:%M')).border = border
-    
+        ws.cell(row=row, column=5, value=expense.created_at.strftime('%Y-%m-%d %H:%M')).border = border  # ✅ NOW INSIDE THE LOOP
+        
     # Summary section
     summary_row = queryset.count() + 6
     ws.cell(row=summary_row, column=1, value="TOTAL:").font = Font(bold=True, size=12)
