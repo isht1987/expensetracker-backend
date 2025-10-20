@@ -17,25 +17,23 @@ from expenses_backend.response_schemas import get_status_from_code
 
 
 class CustomAPIView(views.APIView):
-
     def dispatch(self, request, *args, **kwargs):
         self.response = super().dispatch(request, *args, **kwargs)
         
         if isinstance(self.response, Response):
             resp_data = getattr(self.response, 'data', None)
             
-            if isinstance(resp_data, dict):
-                # Normal dict error or detail handling
-                if resp_data.get('detail'):
-                    detail_msg = resp_data.get('detail', '')
-                    self.response.data = {
-                        'status': get_status_from_code(self.response.status_code),
-                        'status_code': self.response.status_code,
-                        'message': detail_msg,
-                        'data': []
-                    }
+            if isinstance(resp_data, dict) and 'detail' in resp_data:
+                # Handle error responses
+                detail_msg = resp_data.get('detail', '')
+                self.response.data = {
+                    'status': get_status_from_code(self.response.status_code),
+                    'status_code': self.response.status_code,
+                    'message': detail_msg,
+                    'data': []
+                }
             elif isinstance(resp_data, list):
-                # For list responses, wrap in a standard schema
+                # Wrap list responses in a standard schema
                 self.response.data = {
                     'status': get_status_from_code(self.response.status_code),
                     'status_code': self.response.status_code,
@@ -43,8 +41,6 @@ class CustomAPIView(views.APIView):
                     'data': resp_data
                 }
         return self.response
-
-
 
 def get_object_or_404(queryset, *filter_args, **filter_kwargs):
     """
