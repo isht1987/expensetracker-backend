@@ -58,7 +58,8 @@ class ExpensePagination(PageNumberPagination):
 
 class ExpenseListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
-    pagination_class = ExpensePagination
+    # Return all expenses (disable pagination here)
+    pagination_class = None
     
     def get_queryset(self):
         queryset = Expense.objects.filter(user=self.request.user).select_related('user')
@@ -410,23 +411,36 @@ def expense_history(request):
             Q(custom_category__icontains=search)
         )
     
-    # Pagination
-    paginator = ExpensePagination()
-    paginated_queryset = paginator.paginate_queryset(queryset.order_by('-date', '-created_at'), request)
-    
-    serializer = ExpenseSerializer(paginated_queryset, many=True, context={'request': request})
-    
+    serializer = ExpenseSerializer(queryset.order_by('-date', '-created_at'), many=True, context={'request': request})
+
     # Calculate totals
-    total_amount = queryset.aggregate(Sum('amount'))['amount__sum'] or 0
+    # Calculate last month's total for the requesting user
+    now_date = timezone.now().date()
+    first_day_current_month = now_date.replace(day=1)
+    last_day_prev_month = first_day_current_month - timedelta(days=1)
+    prev_year = last_day_prev_month.year
+    prev_month = last_day_prev_month.month
+
+    last_month_total = Expense.objects.filter(
+        user=request.user,
+        date__year=prev_year,
+        date__month=prev_month
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+
     total_count = queryset.count()
-    
-    return paginator.get_paginated_response({
-        'expenses': serializer.data,
-        'summary': {
-            'total_amount': float(total_amount),
-            'total_count': total_count
+
+    return create_api_response(
+        request,
+        status_code=status.HTTP_200_OK,
+        message="Expenses retrieved successfully",
+        data={
+            'expenses': serializer.data,
+                    'summary': {
+                        'last_month_amount': float(last_month_total),
+                        'total_count': total_count
+                    }
         }
-    })
+    )
 
 
 @api_view(['GET'])
@@ -518,4 +532,35 @@ def category_choices(request):
         status_code=status.HTTP_200_OK,
         message="Categories retrieved successfully",
         data={'categories': categories}
+    )
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_month_summary(request):
+    """Get current month's total expenses and count"""
+    now = timezone.now()
+    
+    # Get expenses for current month
+    current_month_expenses = Expense.objects.filter(
+        user=request.user,
+        date__year=now.year,
+        date__month=now.month
+    )
+    
+    # Calculate totals
+    total_amount = current_month_expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+    total_count = current_month_expenses.count()
+    
+    summary = {
+        'month': calendar.month_name[now.month],
+        'month_number': now.month,
+        'year': now.year,
+        'total_expenses': float(total_amount),
+        'count': total_count
+    }
+    
+    return create_api_response(
+        request,
+        status_code=status.HTTP_200_OK,
+        message="Current month summary retrieved successfully",
+        data=summary
     )
