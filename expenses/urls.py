@@ -6,6 +6,9 @@ urlpatterns = [
     path('expenses/', views.ExpenseListCreateView.as_view(), name='expense-list-create'),
     path('expenses/<int:pk>/', views.ExpenseDetailView.as_view(), name='expense-detail'),
     
+    # Current month summary endpoint (add this BEFORE other specific endpoints)
+    path('expenses/current-month/', views.current_month_summary, name='current-month-summary'),
+    
     # History and Stats endpoints
     path('expenses/history/', views.expense_history, name='expense-history'),
     path('dashboard/stats/', views.dashboard_stats, name='dashboard-stats'),

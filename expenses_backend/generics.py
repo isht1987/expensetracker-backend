@@ -13,20 +13,25 @@ from rest_framework import mixins, views
 from rest_framework.settings import api_settings
 from rest_framework.response import Response
 
+from expenses_backend.response_schemas import get_status_from_code
 
 
 class CustomAPIView(views.APIView):
 
     def dispatch(self, request, *args, **kwargs):
         self.response = super().dispatch(request, *args, **kwargs)
-        
+        # Some responses (eg. Django HttpResponse) may not have .data.
+        # Also DRF can return list-like objects (ReturnList) which don't
+        # implement dict-like .get(). Safely access and normalize error
+        # detail messages only when data is a dict and contains 'detail'.
         if isinstance(self.response, Response):
-            if self.response.data and self.response.data.get('detail', None):
-
-                self.response.data = { 
+            resp_data = getattr(self.response, 'data', None)
+            if isinstance(resp_data, dict) and resp_data.get('detail', None):
+                detail_msg = resp_data.get('detail', '')
+                self.response.data = {
                     'status': get_status_from_code(self.response.status_code),
-                    "status_code": self.response.status_code,
-                    'message': self.response.data.get('detail', ''),
+                    'status_code': self.response.status_code,
+                    'message': detail_msg,
                     'data': []
                 }
 
