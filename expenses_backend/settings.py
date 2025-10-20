@@ -16,19 +16,25 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     "0.0.0.0",
     "192.168.2.84",
-    "localhost"
+    "localhost",
+    "13.201.19.19",
+    "65.0.125.115",
+    "*"
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3001",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://127.0.0.1;8000"
+    "http://127.0.0.1;8000",
+    "http://65.0.125.115:5173",
+    "https://api.thebillman.com" 
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://192.168.2.84:3000",
+    "https://api.thebillman.com"
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -107,11 +113,11 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('RDS_DB_NAME', 'expense_tracker_db'),
-        'USER': os.environ.get('RDS_USERNAME', 'postgres'),
-        'PASSWORD': os.environ.get('RDS_PASSWORD', 'your_password'),
-        'HOST': os.environ.get('RDS_HOSTNAME', 'localhost'),
-        'PORT': os.environ.get('RDS_PORT', '5432'),
+        'NAME': os.environ.get('RDS_DB_NAME'),
+        'USER': os.environ.get('RDS_USERNAME'),
+        'PASSWORD': os.environ.get('RDS_PASSWORD'),
+        'HOST': os.environ.get('RDS_HOSTNAME'),
+        'PORT': os.environ.get('RDS_PORT'),
     }
 }
 
