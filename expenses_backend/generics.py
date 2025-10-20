@@ -20,22 +20,30 @@ class CustomAPIView(views.APIView):
 
     def dispatch(self, request, *args, **kwargs):
         self.response = super().dispatch(request, *args, **kwargs)
-        # Some responses (eg. Django HttpResponse) may not have .data.
-        # Also DRF can return list-like objects (ReturnList) which don't
-        # implement dict-like .get(). Safely access and normalize error
-        # detail messages only when data is a dict and contains 'detail'.
+        
         if isinstance(self.response, Response):
             resp_data = getattr(self.response, 'data', None)
-            if isinstance(resp_data, dict) and resp_data.get('detail', None):
-                detail_msg = resp_data.get('detail', '')
+            
+            if isinstance(resp_data, dict):
+                # Normal dict error or detail handling
+                if resp_data.get('detail'):
+                    detail_msg = resp_data.get('detail', '')
+                    self.response.data = {
+                        'status': get_status_from_code(self.response.status_code),
+                        'status_code': self.response.status_code,
+                        'message': detail_msg,
+                        'data': []
+                    }
+            elif isinstance(resp_data, list):
+                # For list responses, wrap in a standard schema
                 self.response.data = {
                     'status': get_status_from_code(self.response.status_code),
                     'status_code': self.response.status_code,
-                    'message': detail_msg,
-                    'data': []
+                    'message': 'success',
+                    'data': resp_data
                 }
-
         return self.response
+
 
 
 def get_object_or_404(queryset, *filter_args, **filter_kwargs):
